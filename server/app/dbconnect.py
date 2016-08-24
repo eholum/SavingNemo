@@ -173,7 +173,7 @@ class DbConnect(object):
         elif output_type == "Average":                      # Average
             temp_field = "AVG(temp.Temp_C)"
         else:                                               # Raw
-            temp_field = "temp.Temp_C"
+            temp_field = "temp.Temp_C, log.microsite_id"
 
         if analysis_type == "Daily":                        # Daily
             date_field = "DATE_FORMAT(temp.Time_GMT, '%m/%d/%Y')"
@@ -183,7 +183,7 @@ class DbConnect(object):
             date_field = "YEAR(temp.Time_GMT)"
         else:                                               # Raw, no change
             date_field = "temp.Time_GMT"
-        query = """SELECT %s, %s
+        query = """SELECT %s, %s, %s
                    FROM `cnx_logger` log
                    INNER JOIN `cnx_logger_biomimic_type` biotype
                    ON biotype.`biomimic_id` = log.`biomimic_id`
@@ -192,14 +192,15 @@ class DbConnect(object):
                    INNER JOIN `cnx_logger_properties` prop
                    ON prop.`prop_id` = log.`prop_id`
                    INNER JOIN `cnx_logger_temperature` temp
-                   ON temp.`logger_id` = log.`logger_id` """ % (date_field, temp_field)
+                   ON temp.`logger_id` = log.`logger_id` """ % (date_field, temp_field, logger_id))
         where_condition = self.build_where_condition(query_dict)
         cursor.execute(query + where_condition + " LIMIT 10 ")
         results = cursor.fetchall()
         results = list(results)
-        final_result = [[result[0], round(result[1], 4)] for result in results]
+		for result in results:
+			round(result[1],4)
         cursor.close()
-        return final_result, query + where_condition
+        return results, query + where_condition
 
     def get_query_raw_results(self, db_query):
         """Fetches records form tables based on user query"""
@@ -207,9 +208,10 @@ class DbConnect(object):
         cursor.execute(db_query)
         results = cursor.fetchall()
         results = list(results)
-        final_result = [[result[0], round(result[1], 4)] for result in results]
+		for result in results:
+			round(result[1],4)
         cursor.close()
-        return final_result
+        return results
 
     def build_where_condition(self, query_dict):
         """Builds the where_condition for the Select Query"""
